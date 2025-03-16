@@ -150,7 +150,7 @@ async function addTxToList(tx, i) {
 
     const txItem = document.createElement('div');
     txItem.classList.add('bg-gray-800/30', 'rounded-xl', 'p-6', 'border', 'border-gray-700/50', 'hover:border-blue-500/50', 'transition', 'cursor-pointer');
-    txItem.onclick = function () { window.location.href = `/tx/${tx.hash}`; }
+    txItem.onclick = function () { window.location.href = `tx/${tx.hash}`; }
     txItem.innerHTML = `
         <div class="flex justify-between items-start mb-4">
             <div class="flex items-center space-x-2">
@@ -186,8 +186,10 @@ function handleSearch(event) {
 function search(query) {
     if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
         window.location.href = `address/${query}`;
-    } else if (/^0x[a-fA-F0-9]{64}$/.test(query)) {
+    } else if (/^[a-fA-F0-9]{62}$/.test(query)) {
         window.location.href = `tx/${query}`;
+    } else if (/^0x[a-fA-F0-9]{64}$/.test(query)) {
+        window.location.href = `tx/${query.replace("0x", "")}`;
     } else {
         showToast('Not a valid TX hash or address.', 'error');
     }
@@ -379,7 +381,7 @@ function displayTransactions(transactions) {
     transactions.forEach(tx => {
         const txItem = document.createElement("div");
         txItem.classList.add("bg-gray-800/30", "rounded-xl", "p-6", "border", "border-gray-700/50", "hover:border-blue-500/50", "transition", "cursor-pointer");
-        txItem.onclick = function () { window.location.href = `/tx/${tx.hash}`; };
+        txItem.onclick = function () { window.location.href = `tx/${tx.hash}`; };
         txItem.innerHTML = `
             <div class="flex justify-between items-start mb-4">
                 <div class="flex items-center space-x-2">
