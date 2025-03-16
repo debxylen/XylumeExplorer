@@ -118,7 +118,8 @@ async function getLatestBlock() {
 }
 
 async function getLatestTransactions() {
-    document.getElementById("loadmore").remove();
+    var loadBtn = document.getElementById("loadmore");
+    if (loadBtn) loadBtn.remove();
     await getLatestBlock();
     const numTransactions = 10;
     if (shownTill > 0) { var target = shownTill - 1; } else { var target = latestBlock; } // count down from latest tx or from how much is shown
