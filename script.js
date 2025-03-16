@@ -186,10 +186,8 @@ function handleSearch(event) {
 function search(query) {
     if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
         window.location.href = `address/${query}`;
-    } else if (/^[a-fA-F0-9]{62}$/.test(query)) {
+    } else if (/^[a-fA-F0-9]{64}$/.test(query)) {
         window.location.href = `tx/${query}`;
-    } else if (/^0x[a-fA-F0-9]{64}$/.test(query)) {
-        window.location.href = `tx/${query.replace("0x", "")}`;
     } else {
         showToast('Not a valid TX hash or address.', 'error');
     }
