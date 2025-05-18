@@ -38,7 +38,7 @@
                             <i class="fa-solid fa-search cursor-pointer absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
                                 onclick="search(document.getElementById('search').value)"></i>
                         </div>
-                        <button onclick="connectWallet(this)"
+                        <button onclick="clickWallet(this)"
                             class="bg-blue-600/20 hover:bg-blue-600/30 px-4 py-2 rounded-lg transition">
                             <i class="fa-solid fa-wallet mr-2"></i>Connect
                         </button>
@@ -70,17 +70,36 @@
                         <div class="text-xl font-bold text-purple-500">- -</div>
                     </div>
                 </div>
-                <div id="tx-details" class="max-h-[50vh] h-[50vh] mt-10 overflow-y-auto space-y-4">
-                    <div
-                        class="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50 hover:border-blue-500/50 transition cursor-pointer">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex items-center space-x-2">
-                                <i class="fa-solid fa-arrow-right-arrow-left text-green-500"></i>
-                                <span class="text-green-500 font-medium">Transfer</span>
-                            </div>
+                <!-- Transaction Metadata -->
+                <div id="tx-meta-details" class="mt-10">
+                    <div class="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
+                        <div class="flex items-center space-x-2 mb-4">
+                            <i class="fa-solid fa-circle-info text-blue-400"></i>
+                            <span class="text-blue-400 font-semibold text-lg">Transaction Metadata</span>
                         </div>
-                        <div class="grid gap-4">
+                        <div class="grid gap-4" id="tx-meta-content"></div>
+                    </div>
+                </div>
+
+                <!-- Value Transfer Info -->
+                <div id="tx-details" class="mt-6">
+                    <div class="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
+                        <div class="flex items-center space-x-2 mb-4">
+                            <i class="fa-solid fa-arrow-right-arrow-left text-green-500"></i>
+                            <span id="transaction-type" class="text-green-500 font-semibold text-lg">Transfer</span>
                         </div>
+                        <div class="grid gap-4" id="tx-transfer-content"></div>
+                    </div>
+                </div>
+
+                <!-- Smart Contract Actions -->
+                <div id="tx-actions" class="mt-6 hidden">
+                    <div class="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
+                        <div class="flex items-center space-x-2 mb-4">
+                            <i class="fa-solid fa-code text-purple-400"></i>
+                            <span class="text-purple-400 font-semibold text-lg">Contract Interaction</span>
+                        </div>
+                        <div class="space-y-4" id="tx-action-content"></div>
                     </div>
                 </div>
             </div>

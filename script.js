@@ -2,39 +2,111 @@ const rpcUrl = 'https://xyl-testnet.glitch.me/rpc/';
 const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 const web3 = new Web3(rpcUrl);
 var latestBlock = 0;
-let shownTill = 0;
 var lastBlock;
+let hideZeroGas = true;
+let userAddress = null;
+let walletModal = null;
 const params = new URLSearchParams(window.location.search);
 
+const XYLUME_CHAIN = {
+  chainId: '0x1b16',
+  chainName: 'Xylume TestNet',
+  rpcUrls: ['https://xyl-testnet.glitch.me/rpc/'],
+  blockExplorerUrls: ['https://debxylen.github.io/XylumeExplorer'],
+  nativeCurrency: {
+    name: 'Xylume',
+    symbol: 'XYL',
+    decimals: 18,
+  },
+};
+
 async function connectWallet(el) {
-    if (window.ethereum) {
+    if (userAddress) { clickWallet(); return; }
+    if (!window.ethereum) { showToast("An EVM-compatible wallet is required to connect."); return; }
+
+    try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = provider.getSigner()
+        userAddress = await signer.getAddress();
+
         try {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            const signer = provider.getSigner()
-            const address = await signer.getAddress();
-            el.innerText = address.substring(0, 10) + '...';
-        } catch (error) {
-            alert("Connection failed:", error);
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: XYLUME_CHAIN.chainId }] });
+        } catch (switchError) {
+            if (switchError.code === 4902) {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [XYLUME_CHAIN],
+                });
+            }
         }
+
+        el.innerText = userAddress.substring(0, 10) + '...';
+
+    } catch (error) {
+        showToast("Connection failed:", error);
+        return;
+    }
+
+}
+
+async function clickWallet() {
+    const el = document.querySelector('#header').getElementsByTagName('button')[0];
+    if (userAddress) {
+        walletModal = document.createElement('div');
+        walletModal.id = 'wallet-modal';
+        walletModal.classList.add('fixed', 'inset-0', 'bg-black/60', 'backdrop-blur-sm', 'z-50', 'flex', 'items-center', 'justify-center');
+        walletModal.innerHTML = `
+            <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-[90%] max-w-md shadow-xl text-center space-y-6">
+                <div class="flex items-center justify-between">
+                <div 
+                    onclick="document.body.removeChild(walletModal); walletModal = null;" 
+                    class="cursor-pointer text-gray-700 p-2">
+                    <i class="fa-solid fa-x"></i>
+                </div>
+                <div class="text-xl text-white font-semibold text-center flex-1">
+                    Wallet Connected
+                </div>
+                <div class="w-6"></div> <!-- placeholder to balance icon -->
+                </div>
+                <div class="text-sm text-gray-400">${userAddress}</div>
+                <div class="flex justify-center space-x-4">
+                <button onclick="disconnectWalletFromModal()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                    Disconnect
+                </button>
+                <button onclick="window.open('/address.html?address=' + userAddress, '_blank')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                    View Address
+                </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(walletModal);
     } else {
-        alert("Please install an EVM-compatible wallet!");
+        await connectWallet(el);
     }
 }
 
-async function addLoadBtn() {
-    var loaddiv = document.createElement('div');
-    loaddiv.classList.add('mt-8', 'flex', 'justify-center');
-    loaddiv.id = 'loadmore';
-    loaddiv.innerHTML = `
-        <button onclick="getLatestTransactions()" class="bg-blue-600/20 hover:bg-blue-600/30 px-6 py-3 rounded-lg transition">
-            Load More Transactions
-        </button>`;
-    document.getElementById('tx-list').appendChild(loaddiv);
+async function disconnectWallet(el) {
+    if (window.ethereum) {
+        await window.ethereum.request({ method: 'eth_requestAccounts', params: [] });
+    }
+    userAddress = null;
+    el.innerText = "Connect Wallet";
+    el.onclick = connectWallet;
+}
+
+function disconnectWalletFromModal() {
+  if (!userAddress) return;
+  const el = document.querySelector('#header').getElementsByTagName('button')[0];
+  disconnectWallet(el);
+  document.getElementById('wallet-modal').classList.add('hidden');
+}
+
+function viewWalletAddress() {
+  window.location.href = `/address.html?address=${userAddress}`;
 }
 
 async function refresh() {
-    shownTill = 0;
     document.getElementById('tx-list').innerHTML = '';
     await getLatestBlock();
     await getLatestTransactions();
@@ -117,42 +189,54 @@ async function getLatestBlock() {
     document.getElementById('stat-gas').querySelector('.text-green-500').innerText = `${estimatedGas} XYL`;
 }
 
-async function getLatestTransactions() {
-    var loadBtn = document.getElementById("loadmore");
-    if (loadBtn) loadBtn.remove();
-    await getLatestBlock();
-    const numTransactions = 10;
-    if (shownTill > 0) { var target = shownTill - 1; } else { var target = latestBlock; } // count down from latest tx or from how much is shown
-    for (let i = target; i >= 0 && i > target - numTransactions; i--) {
-        const blockResponse = await fetch(rpcUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                jsonrpc: "2.0",
-                method: "eth_getTransactionByNumber",
-                params: [ `0x${i.toString(16)}`, true ],
-                id: 1
-            })
-        });
-        
-        const blockData = await blockResponse.json();
-        const block = blockData.result;
-        if (block) {
-            await addTxToList(block, i);
-            shownTill = i;
-        }
-    }
-    await addLoadBtn();
+function toggleZeroGasFilter(button) {
+  hideZeroGas = !hideZeroGas;
+
+  const thumb = button.querySelector("span");
+  thumb.classList.toggle("translate-x-5", hideZeroGas);
+
+  button.classList.toggle("bg-blue-500", hideZeroGas);
+  button.classList.toggle("bg-gray-600", !hideZeroGas);
+
+  document.getElementById("tx-list").innerHTML = "";
+  getLatestTransactions();
 }
 
+async function getLatestTransactions() {
+  try {
+    const requestData = {
+      jsonrpc: "2.0",
+      method: "xyl_getCompactSnapshot",
+      params: [["hash", "sender", "recipient", "timestamp", "amount", "gas"]],
+      id: 1
+    };
+
+    const response = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestData)
+    });
+
+    const { result } = await response.json();
+    if (!result || !Array.isArray(result)) throw new Error("Invalid snapshot");
+
+    result.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+    result.forEach((tx, i) => addTxToList(tx, result.length - i - 1)); // later we might use .slice() to limit the number of transactions shown
+
+  } catch (error) {
+    console.error("Failed to fetch snapshot:", error);
+    showToast("Error loading transactions", "error");
+  }
+}
 
 async function addTxToList(tx, i) {
+    if (hideZeroGas && Number(tx.gas) === 0) return;
     const txListElement = document.getElementById('tx-list');
 
     const txItem = document.createElement('div');
     txItem.classList.add('bg-gray-800/30', 'rounded-xl', 'p-6', 'border', 'border-gray-700/50', 'hover:border-blue-500/50', 'transition', 'cursor-pointer');
-    txItem.onclick = function () { window.location.href = `tx/${tx.hash}`; }
     txItem.innerHTML = `
+        <a href="tx/${tx.hash}">
         <div class="flex justify-between items-start mb-4">
             <div class="flex items-center space-x-2">
                 <i class="fa-solid fa-arrow-right-arrow-left text-green-500"></i>
@@ -174,8 +258,8 @@ async function addTxToList(tx, i) {
             <div class="text-xl font-bold">${web3.utils.fromWei(tx.amount, 'ether')} XYL</div>
             <div class="text-gray-400 text-sm truncate">Hash: ${tx.hash}</div>
         </div>
+        </a>
     `;
-
     txListElement.appendChild(txItem);
 }
 
@@ -236,62 +320,146 @@ function getIcon(type) {
 }
 
 // tx
-async function fetchTransaction() {
-    const txHash = params.get("hash");
-    if (!txHash) {
-        showToast("Invalid transaction ID.", "error");
-        return;
-    }
+function hexToString(hex) {
+  if (hex.startsWith("0x")) hex = hex.slice(2);
+  const bytes = [];
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes.push(parseInt(hex.slice(i, i + 2), 16));
+  }
+  return new TextDecoder().decode(new Uint8Array(bytes));
+}
 
-    try {
-        const txResponse = await fetch(rpcUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                jsonrpc: "2.0",
-                method: "eth_getTransactionByHash",
-                params: [ txHash ],
-                id: 1
-            })
-        });
-
-        const txData = await txResponse.json();
-        const tx = txData.result;
-        if (!tx) throw new Error("Transaction not found");
-
-        document.getElementById('stat-sender').querySelector('div.text-blue-500').innerText = tx.sender;
-        document.getElementById('stat-recipient').querySelector('div.text-blue-500').innerText = tx.recipient;
-        document.getElementById('stat-amount').querySelector('div.text-green-500').innerText = `${web3.utils.fromWei(tx.amount, "ether")} XYL`;
-        document.getElementById('stat-gas').querySelector('div.text-purple-500').innerText = tx.gas/(10**18)+' XYL';
-
-        document.getElementById('tx-details').querySelector('.grid.gap-4').innerHTML = `
-            ${generateTxDetail("Hash", tx.hash)}
-            ${generateTxDetail("From", tx.sender)}
-            ${generateTxDetail("To", tx.recipient)}
-            ${generateTxDetail("Amount", web3.utils.fromWei(tx.amount, "ether") + " XYL")}
-            ${generateTxDetail("Gas", tx.gas/(10**18)+' XYL')}
-            ${generateTxDetail("Remaining Juice", tx.juice/(10**18)+' XYL')}
-            ${generateTxDetail("Nonce", tx.nonce)}
-            ${generateTxDetail("Data", tx.input || '0x')}
-            ${generateTxDetail("Timestamp", `${new Date(Number(tx.timestamp) * 1000).toLocaleString()} (Raw: ${tx.timestamp})`)}
-            ${generateTxDetail("Parents", tx.parents.join(", "))}
-        `;
-
-    } catch (error) {
-        showToast("An error occurred while fetching transaction details.", "error");
-    }
+function stringToHexWithPrefix(inputString) {
+  return "0x" + new TextEncoder().encode(inputString).reduce((acc, b) => acc + b.toString(16).padStart(2, "0"), "");
 }
 
 function generateTxDetail(label, value) {
-    return `             
-        <div class="flex items-center space-x-3">
-            <div class="text-base text-gray-400">${label}:</div>
-            <div class="flex-1 flex items-center space-x-2 cursor-pointer" onclick="copyToClipboard('${value}', this)">
-                <div class="text-blue-500 overflow-hidden text-ellipsis max-w-[70vw]">${value}</div> 
-                <i class="fa-solid fa-copy text-gray-400 text-sm"></i>
-            </div>
-        </div>
+  return `
+    <div class="flex items-center space-x-3">
+      <div class="text-base text-gray-400">${label}:</div>
+      <div class="flex-1 flex items-center space-x-2 cursor-pointer" onclick="copyToClipboard('${value}', this)">
+        <div class="text-blue-500 overflow-hidden text-ellipsis max-w-[70vw]">${value}</div> 
+        <i class="fa-solid fa-copy text-gray-400 text-sm"></i>
+      </div>
+    </div>
+  `;
+}
+
+async function fetchTransaction() {
+  const txHash = params.get("hash");
+  if (!txHash) return showToast("Invalid transaction ID.", "error");
+
+  try {
+    const txResponse = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "eth_getTransactionByHash",
+        params: [txHash],
+        id: 1
+      })
+    });
+
+    const { result: tx } = await txResponse.json();
+    if (!tx) throw new Error("Transaction not found");
+
+    // Stat Cards
+    document.getElementById('stat-sender').querySelector('div.text-blue-500').innerText = tx.sender;
+    document.getElementById('stat-recipient').querySelector('div.text-blue-500').innerText = tx.recipient;
+    document.getElementById('stat-amount').querySelector('div.text-green-500').innerText = `${web3.utils.fromWei(tx.amount, "ether")} XYL`;
+    document.getElementById('stat-gas').querySelector('div.text-purple-500').innerText = tx.gas / 1e18 + ' XYL';
+
+    // Meta Box
+    document.getElementById('tx-meta-content').innerHTML = `
+      ${generateTxDetail("Hash", tx.hash)}
+      ${generateTxDetail("Nonce", tx.nonce)}
+      ${generateTxDetail("Gas", tx.gas / 1e18 + ' XYL')}
+      ${generateTxDetail("Timestamp", new Date(Number(tx.timestamp) * 1000).toLocaleString() + ` (Raw: ${tx.timestamp})`)}
+      ${generateTxDetail("Parents", tx.parents.join(", "))}
     `;
+
+    // Transfer Box
+    document.getElementById('tx-transfer-content').innerHTML = `
+      ${generateTxDetail("From", tx.sender)}
+      ${generateTxDetail("To", tx.recipient)}
+      ${generateTxDetail("Amount", web3.utils.fromWei(tx.amount, "ether") + " XYL")}
+      ${generateTxDetail("Remaining Juice", `${tx.juice / 1e18} XYL <i class='fa-solid fa-circle-info text-xs text-gray-500 cursor-pointer' title='Juice remaining in this transaction (usable by the recipient)'></i>`)}
+    `;
+
+    // Smart Contract Actions
+    const input = tx.input || tx.data || '0x';
+    if (input !== '0x') {
+      document.getElementById('tx-actions').classList.remove('hidden');
+
+      let actionsHtml = '';
+      const decoded = hexToString(input);
+      const data = decoded.split(" ");
+
+      if (input.startsWith("0xa9059cbb")) { // token transfer
+        const tokenRecipient = '0x' + input.slice(10, 74).slice(-40);
+        const tokenAmount = BigInt('0x' + input.slice(74));
+        const info = await getTokenInfo(tx.recipient); 
+        const symbol = info.symbol;
+
+        actionsHtml += `
+          <div class="bg-gray-800/30 rounded-xl border border-gray-700/50 p-4 space-y-3">
+            <div class="text-sm text-gray-400 font-semibold mb-1">Token Transfer</div>
+            <div class="bg-gray-700/40 border border-gray-600/50 rounded-lg p-3">
+                Transfer <span class="text-pink-400">${(tokenAmount / 10n ** 18n).toString()}</span> <a href="address.html?address=${tx.recipient}" class="text-blue-400 bg-white/10 p-1 rounded hover:underline">\$${symbol}</a> 
+                to <a href="address.html?address=${tokenRecipient}" class="text-yellow-400 hover:underline">${tokenRecipient}</a>
+            </div>
+          </div>
+        `;
+    } else if (data[0] === "createToken") {
+        const authority = data[1];
+        const initialMintAddress = data[2];
+        const initialSupply = BigInt(data[3]);
+        const symbol = data[4];
+        const tokenName = data.slice(5).join(" ");
+        const tokenAddr = stringToHexWithPrefix(`${tx.nonce}token${tx.sender.toLowerCase()}`).slice(0, 42);
+        const formattedAmount = (initialSupply / 10n ** 18n).toString();
+
+        actionsHtml += `
+            <div class="bg-gray-800/30 rounded-xl border border-gray-700/50 p-4 space-y-3">
+            <div class="text-sm text-gray-400 font-semibold mb-1">Token Creation</div>
+
+            <!-- Subcard 1: Create -->
+            <div class="bg-gray-700/40 border border-gray-600/50 rounded-lg p-3">
+                Create <a href="address.html?address=${tokenAddr}" class="text-blue-400 bg-white/10 p-1 rounded hover:underline">\$${symbol}</a> 
+                with authority <a href="address.html?address=${authority}" class="text-yellow-400 hover:underline">${authority}</a>
+            </div>
+
+            <!-- Subcard 2: Mint -->
+            <div class="bg-gray-700/40 border border-gray-600/50 rounded-lg p-3">
+                Mint <span class="text-pink-400">${formattedAmount}</span> 
+                <a href="address.html?address=${tokenAddr}" class="text-blue-400 bg-white/10 p-1 rounded hover:underline">\$${symbol}</a> 
+                to <a href="address.html?address=${initialMintAddress}" class="text-yellow-400 hover:underline">${initialMintAddress}</a>
+            </div>
+            </div>
+        `;
+    } else if (data[0] === "mintToken") {
+        const info = await getTokenInfo(data[1]);
+        const symbol = info.symbol;
+        actionsHtml += `
+          <div class="bg-gray-800/30 rounded-xl border border-gray-700/50 p-4 space-y-3">
+            <div class="text-sm text-gray-400 font-semibold mb-1">Token Mint</div>
+            <div class="bg-gray-700/40 border border-gray-600/50 rounded-lg p-3">
+                Mint <span class="text-pink-400">${(BigInt(data[3]) / 10n ** 18n).toString()}</span> 
+                <a href="address.html?address=${data[1]}" class="text-blue-400 bg-white/10 p-1 rounded hover:underline">\$${symbol}</a> 
+                to <a href="address.html?address=${data[2]}" class="text-yellow-400 hover:underline">${data[2]}</a>
+            </div>
+          </div>
+        `;
+      }
+
+      document.getElementById('tx-action-content').innerHTML = actionsHtml;
+    }
+
+  } catch (error) {
+    console.error(error);
+    showToast("An error occurred while fetching transaction details.", "error");
+  }
 }
 
 function copyToClipboard(text, el) {
@@ -313,35 +481,73 @@ function copyToClipboard(text, el) {
     document.body.removeChild(tempInput);
 }
 
+// address
+
 async function fetchAddressData() {
-    const address = params.get("address");
-    if (!address) {
-        showToast("Invalid address.", "error");
-        return;
+  const address = params.get("address");
+  if (!address) {
+    showToast("Invalid address.", "error");
+    return;
+  }
+
+  try {
+    document.getElementById('stat-address').querySelector('div.text-blue-500').innerText = address;
+
+    // Fetch balance
+    const balanceResponse = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "eth_getBalance",
+        params: [address, "latest"],
+        id: 1
+      })
+    });
+    const balanceData = await balanceResponse.json();
+    const balance = balanceData.result;
+    document.getElementById('stat-balance').querySelector('div.text-blue-500').innerText = `${web3.utils.fromWei(balance, "ether")} XYL`;
+
+    // Reserved check
+    if (address.toLowerCase() === '0x1111111111111111111111111111111111111111') {
+      document.getElementById('stat-type').querySelector('div.text-purple-500').innerText = "System Address";
+      showInfoBox("Native Token Handler", // born to say 'Token Daddy', forced to use 'Native Token Handler'
+        `This is a core system address embedded in the Xylume protocol. <br>Users can launch tokens and mint supply by sending hex-encoded instructions to this address &mdash; no contracts required.`);
+    } else {
+      const tokenInfo = await getTokenInfo(address);
+      if (tokenInfo) {
+        document.getElementById('stat-type').querySelector('div.text-purple-500').innerText = "Token Contract";
+        showInfoBox("Token Information", `
+          <div class="">
+            <div><span class="text-gray-400">Name:</span> <span class="text-blue-400 font-medium">${tokenInfo.name}</span></div>
+            <div><span class="text-gray-400">Symbol:</span> <span class="text-yellow-400 font-medium">${tokenInfo.symbol}</span></div>
+            <div><span class="text-gray-400">Decimals:</span> <span class="text-green-400 font-medium">${tokenInfo.decimals}</span></div>
+            <div class="mt-2 text-white/70">This token was launched via the native Xylume token system using the protocol-level <a class="text-blue-400 hover:underline" href="address.html?address=0x1111111111111111111111111111111111111111">Native Token Handler</a>.</div>
+          </div>
+        `);
+      } else {
+        document.getElementById('stat-type').querySelector('div.text-purple-500').innerText = "Account";
+      }
     }
 
-    try {
-        // Fetch balance for the address
-        const response = await fetch(rpcUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                jsonrpc: "2.0",
-                method: "eth_getBalance",
-                params: [address, "latest"],
-                id: 1
-            })
-        });
+    fetchTransactions(address);
+  } catch (error) {
+    showToast("Error fetching address details.", "error");
+    console.error(error);
+  }
+}
 
-        const balanceData = await response.json();
-        const balance = balanceData.result;
-        document.getElementById('stat-address').querySelector('div.text-blue-500').innerText = address;
-        document.getElementById('stat-balance').querySelector('div.text-blue-500').innerText = `${web3.utils.fromWei(balance, "ether")} XYL`;
+function showInfoBox(title, htmlContent) {
+  const container = document.getElementById("address-info").querySelector(".container");
 
-        fetchTransactions(address);
-    } catch (error) {
-        showToast("Error fetching address details.", "error");
-    }
+  const infoBox = document.createElement("div");
+  infoBox.className = "bg-gray-800/40 rounded-xl p-6 border border-gray-700/50 mt-6";
+  infoBox.innerHTML = `
+    <div class="text-lg font-semibold text-purple-400 mb-2">${title}</div>
+    <div class="leading-relaxed">${htmlContent}</div>
+  `;
+
+  container.appendChild(infoBox);
 }
 
 async function fetchTransactions(address) {
@@ -406,4 +612,24 @@ function displayTransactions(transactions) {
         `;
         txList.appendChild(txItem);
     });
+}
+
+// tokens 
+
+const ERC20_ABI = [
+  { "constant": true, "inputs": [], "name": "name", "outputs": [{ "name": "", "type": "string" }], "type": "function" },
+  { "constant": true, "inputs": [], "name": "symbol", "outputs": [{ "name": "", "type": "string" }], "type": "function" },
+  { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" }
+];
+
+async function getTokenInfo(tokenAddress) {
+  const tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
+  try {
+    const name = await tokenContract.methods.name().call();
+    const symbol = await tokenContract.methods.symbol().call();
+    const decimals = 18; // always 18 // await tokenContract.methods.decimals().call();
+    return { name, symbol, decimals };
+  } catch {
+    return null;
+  }
 }
