@@ -74,7 +74,7 @@ async function clickWallet() {
                 <button onclick="disconnectWalletFromModal()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
                     Disconnect
                 </button>
-                <button onclick="window.open('/address.html?address=' + userAddress, '_blank')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                <button onclick="window.open('./address.html?address=' + userAddress, '_blank')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                     View Address
                 </button>
                 </div>
