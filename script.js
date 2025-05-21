@@ -271,7 +271,7 @@ function handleSearch(event) {
 function search(query) {
     if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
         window.location.href = `address/${query}`;
-    } else if (/^[a-fA-F0-9]{64}$/.test(query)) {
+    } else if (/^0x[a-fA-F0-9]{64}$/.test(query)) {
         window.location.href = `tx/${query}`;
     } else {
         showToast('Not a valid TX hash or address.', 'error');
@@ -389,10 +389,11 @@ async function fetchTransaction() {
 
     // Smart Contract Actions
     const input = tx.input || tx.data || '0x';
+    let actionsHtml = '';
+    actionsHtml += generateTxDetail("Data", input);
     if (input !== '0x') {
       document.getElementById('tx-actions').classList.remove('hidden');
 
-      let actionsHtml = '';
       const decoded = hexToString(input);
       const data = decoded.split(" ");
 
