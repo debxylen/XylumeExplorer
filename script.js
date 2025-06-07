@@ -112,6 +112,11 @@ async function refresh() {
     await getLatestTransactions();
 }
 
+async function refreshTxs() {
+    document.getElementById('tx-list').innerHTML = '';
+    await getLatestTransactions();
+}
+
 async function getLastConfirmationSpeed() {
     const requestData = {
         jsonrpc: "2.0",
@@ -202,7 +207,7 @@ function toggleZeroGasFilter(button) {
   getLatestTransactions();
 }
 
-async function getLatestTransactions() {
+async function getLatestTransactions(senderAddr = null, receipientAddr = null) { 
   try {
     const requestData = {
       jsonrpc: "2.0",
@@ -218,10 +223,20 @@ async function getLatestTransactions() {
     });
 
     const { result } = await response.json();
-    if (!result || !Array.isArray(result)) throw new Error("Invalid snapshot");
+    if (!result || !Array.isArray(result)) throw new Error("Invalid snapshot from RPC");
 
     result.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
-    result.forEach((tx, i) => addTxToList(tx, result.length - i - 1)); // later we might use .slice() to limit the number of transactions shown
+    
+    result.forEach((tx, i) => {
+      const senderMatch = senderAddr ? tx.sender.toLowerCase() === senderAddr.toLowerCase() : true;
+      const recipientMatch = receipientAddr ? tx.recipient.toLowerCase() === receipientAddr.toLowerCase() : true;
+
+      if (senderMatch || recipientMatch) {
+        addTxToList(tx, result.length - i - 1);
+      }
+    });
+
+    try { document.getElementById("stat-txs").querySelector(".text-green-500").innerText = result.length.toString(); } catch (error) {}
 
   } catch (error) {
     console.error("Failed to fetch snapshot:", error);
@@ -530,8 +545,6 @@ async function fetchAddressData() {
         document.getElementById('stat-type').querySelector('div.text-purple-500').innerText = "Account";
       }
     }
-
-    fetchTransactions(address);
   } catch (error) {
     showToast("Error fetching address details.", "error");
     console.error(error);
@@ -549,70 +562,6 @@ function showInfoBox(title, htmlContent) {
   `;
 
   container.appendChild(infoBox);
-}
-
-async function fetchTransactions(address) {
-    const requestData = {
-        jsonrpc: "2.0",
-        method: "xyl_transactionsInvolving",
-        params: [address],
-        id: 1
-    };
-
-    try {
-        const response = await fetch(rpcUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestData)
-        });
-
-        const data = await response.json();
-        if (data.result) {
-            document.getElementById('stat-txs').querySelector('div.text-blue-500').innerText = `${data.result.length}`;
-            document.getElementById("transactions").style.display = "block";
-            displayTransactions(data.result);
-        } else {
-            document.getElementById("transactions").style.display = "none";
-        }
-    } catch (error) {
-        document.getElementById("transactions").style.display = "none";
-        showToast("Error fetching transactions.", "error");
-    }
-}
-
-function displayTransactions(transactions) {
-    const txList = document.getElementById("tx-list");
-    txList.innerHTML = "";
-
-    transactions.forEach(tx => {
-        const txItem = document.createElement("div");
-        txItem.classList.add("bg-gray-800/30", "rounded-xl", "p-6", "border", "border-gray-700/50", "hover:border-blue-500/50", "transition", "cursor-pointer");
-        txItem.onclick = function () { window.location.href = `tx/${tx.hash}`; };
-        txItem.innerHTML = `
-            <div class="flex justify-between items-start mb-4">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-arrow-right-arrow-left text-green-500"></i>
-                    <span class="text-green-500 font-medium">Transfer</span>
-                </div>
-                <span class="text-gray-400 text-sm">${new Date(Number(tx.timestamp) * 1000).toLocaleTimeString()}</span>
-            </div>
-            <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                    <div class="text-sm text-gray-400">From</div>
-                    <div class="text-blue-500 truncate cursor-pointer" onclick="copyToClipboard('${tx.sender}', this)">${tx.from}</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-400">To</div>
-                    <div class="text-blue-500 truncate cursor-pointer" onclick="copyToClipboard('${tx.recipient}', this)">${tx.to}</div>
-                </div>
-            </div>
-            <div class="mt-4 flex justify-between items-center">
-                <div class="text-xl font-bold">${web3.utils.fromWei(tx.value, "ether")} XYL</div>
-                <div class="text-gray-400 text-sm truncate cursor-pointer" onclick="copyToClipboard('${tx.hash}', this)">Hash: ${tx.hash}</div>
-            </div>
-        `;
-        txList.appendChild(txItem);
-    });
 }
 
 // tokens 
