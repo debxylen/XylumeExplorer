@@ -1,4 +1,4 @@
-const rpcUrl = 'https://xyl-testnet.glitch.me/rpc/';
+const rpcUrl = 'https://xylume-testnet.sparked.network/rpc';
 const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
 const web3 = new Web3(rpcUrl);
 var latestBlock = 0;
