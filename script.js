@@ -222,11 +222,11 @@ async function getLatestTransactions(senderAddr = null, receipientAddr = null) {
       body: JSON.stringify(requestData)
     });
 
-    const { result } = await response.json();
+    var { result } = await response.json();
     if (!result || !Array.isArray(result)) throw new Error("Invalid snapshot from RPC");
-
-    result.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
     
+    result = result.reverse();
+
     result.forEach((tx, i) => {
       const senderMatch = senderAddr ? tx.sender.toLowerCase() === senderAddr.toLowerCase() : true;
       const recipientMatch = receipientAddr ? tx.recipient.toLowerCase() === receipientAddr.toLowerCase() : true;
