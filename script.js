@@ -11,7 +11,7 @@ const params = new URLSearchParams(window.location.search);
 const XYLUME_CHAIN = {
   chainId: '0x1b16',
   chainName: 'Xylume TestNet',
-  rpcUrls: ['https://xyl-testnet.glitch.me/rpc/'],
+  rpcUrls: ['https://xylume-testnet.sparked.network/rpc/'],
   blockExplorerUrls: ['https://debxylen.github.io/XylumeExplorer'],
   nativeCurrency: {
     name: 'Xylume',
