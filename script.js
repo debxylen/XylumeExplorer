@@ -106,6 +106,13 @@ function viewWalletAddress() {
   window.location.href = `/address.html?address=${userAddress}`;
 }
 
+function formatBigInt(amount, decimals) {
+    const s = amount.toString().padStart(decimals + 1, "0");
+    const intPart = s.slice(0, -decimals);
+    const fracPart = s.slice(-decimals).replace(/0+$/, "");
+    return fracPart.length ? `${intPart}.${fracPart}` : intPart;
+}
+
 async function refresh() {
     document.getElementById('tx-list').innerHTML = '';
     await getLatestBlock();
@@ -422,7 +429,7 @@ async function fetchTransaction() {
           <div class="bg-gray-800/30 rounded-xl border border-gray-700/50 p-4 space-y-3">
             <div class="text-sm text-gray-400 font-semibold mb-1">Token Transfer</div>
             <div class="bg-gray-700/40 border border-gray-600/50 rounded-lg p-3">
-                Transfer <span class="text-pink-400">${(tokenAmount / 10n ** 18n).toString()}</span> <a href="address.html?address=${tx.recipient}" class="text-blue-400 bg-white/10 p-1 rounded hover:underline">\$${symbol}</a> 
+                Transfer <span class="text-pink-400">${formatBigInt(tokenAmount, 18)}</span> <a href="address.html?address=${tx.recipient}" class="text-blue-400 bg-white/10 p-1 rounded hover:underline">\$${symbol}</a> 
                 to <a href="address.html?address=${tokenRecipient}" class="text-yellow-400 hover:underline">${tokenRecipient}</a>
             </div>
           </div>
@@ -434,7 +441,7 @@ async function fetchTransaction() {
         const symbol = data[4];
         const tokenName = data.slice(5).join(" ");
         const tokenAddr = stringToHexWithPrefix(`${tx.nonce}token${tx.sender.toLowerCase()}`).slice(0, 42);
-        const formattedAmount = (initialSupply / 10n ** 18n).toString();
+        const formattedAmount = formatBigInt(initialSupply, 18);
 
         actionsHtml += `
             <div class="bg-gray-800/30 rounded-xl border border-gray-700/50 p-4 space-y-3">
@@ -461,7 +468,7 @@ async function fetchTransaction() {
           <div class="bg-gray-800/30 rounded-xl border border-gray-700/50 p-4 space-y-3">
             <div class="text-sm text-gray-400 font-semibold mb-1">Token Mint</div>
             <div class="bg-gray-700/40 border border-gray-600/50 rounded-lg p-3">
-                Mint <span class="text-pink-400">${(BigInt(data[3]) / 10n ** 18n).toString()}</span> 
+                Mint <span class="text-pink-400">${formatBigInt(data[3], 18)}</span> 
                 <a href="address.html?address=${data[1]}" class="text-blue-400 bg-white/10 p-1 rounded hover:underline">\$${symbol}</a> 
                 to <a href="address.html?address=${data[2]}" class="text-yellow-400 hover:underline">${data[2]}</a>
             </div>
