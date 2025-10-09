@@ -401,7 +401,7 @@ async function fetchTransaction() {
     // Meta Box
     document.getElementById('tx-meta-content').innerHTML = `
       ${generateTxDetail("Hash", tx.hash)}
-      ${generateTxDetail("Nonce", tx.nonce)}
+      ${generateTxDetail("Nonce", Number(tx.nonce))}
       ${generateTxDetail("Gas", tx.gas / 1e18 + ' XYL')}
       ${generateTxDetail("Timestamp", new Date(Number(tx.timestamp) * 1000).toLocaleString() + ` (Raw: ${Number(tx.timestamp)})`)}
       ${generateTxDetail("Parents", tx.parents.join(", "))}
@@ -446,7 +446,7 @@ async function fetchTransaction() {
         const initialSupply = BigInt(data[3]);
         const symbol = data[4];
         const tokenName = data.slice(5).join(" ");
-        const tokenAddr = stringToHexWithPrefix(`${tx.nonce}token${tx.from.toLowerCase()}`).slice(0, 42);
+        const tokenAddr = stringToHexWithPrefix(`${Number(tx.nonce)}token${tx.from.toLowerCase()}`).slice(0, 42);
         const formattedAmount = formatBigInt(initialSupply, 18);
 
         actionsHtml += `
