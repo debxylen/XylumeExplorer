@@ -1,0 +1,114 @@
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.6.9/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <title>Xylume Explorer</title>
+    <link rel="icon" type="image/x-icon" href="favicon.png">
+
+    <style>
+        * {
+            font-family: "Poppins", sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="h-full w-full text-base-content">
+    <div class="fixed inset-0 w-screen h-screen bg-gradient-to-b from-gray-900 to-black -z-10"></div>
+    <div id="explorer" class="text-white">
+        <header id="header"
+            class="fixed w-full z-50 bg-opacity-90 bg-gray-900 backdrop-blur-sm border-b border-gray-800/50">
+            <div class="container mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-diagram-project text-blue-500 text-2xl"></i>
+                        <span class="text-xl font-bold">Xylume Explorer</span>
+                    </div>
+                    <div class="flex items-center space-x-4 flex-1 justify-end">
+                        <div class="relative w-[40%]">
+                            <input id="search" onkeydown="handleSearch(event)" type="text"
+                                placeholder="Search by TX Hash, TX ID or Address"
+                                class="bg-gray-800/50 border border-gray-700 rounded-xl px-6 py-2 focus:outline-none focus:border-blue-500 transition w-full">
+                            <i class="fa-solid fa-search cursor-pointer absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                                onclick="search(document.getElementById('search').value)"></i>
+                        </div>
+                        <button onclick="clickWallet(this)"
+                            class="bg-blue-600/20 hover:bg-blue-600/30 px-4 py-2 rounded-lg transition">
+                            <i class="fa-solid fa-wallet mr-2"></i>Connect
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+
+        <section id="network-stats" class="py-8">
+            <div class="container mx-auto px-6 mt-[10vh]">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div id="stat-block" class="bg-gray-800/30 rounded-xl p-4 border border-gray-700/50">
+                        <div class="text-gray-400 text-sm">Latest Transaction</div>
+                        <div class="text-xl font-bold text-blue-500">- -</div>
+                    </div>
+                    <div id="stat-time" class="bg-gray-800/30 rounded-xl p-4 border border-gray-700/50">
+                        <div class="text-gray-400 text-sm">Last Transaction Time</div>
+                        <div class="text-xl font-bold text-blue-500">- -</div>
+                    </div>
+                    <div id="stat-gas" class="bg-gray-800/30 rounded-xl p-4 border border-gray-700/50">
+                        <div class="text-gray-400 text-sm">Current Estimated Gas</div>
+                        <div class="text-xl font-bold text-green-500">- -</div>
+                    </div>
+                    <div id="stat-speed" class="bg-gray-800/30 rounded-xl p-4 border border-gray-700/50">
+                        <div class="text-gray-400 text-sm">Last Transaction Confirmation Speed</div>
+                        <div class="text-xl font-bold text-purple-500">- -</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="transactions" class="py-8">
+            <div class="container mx-auto px-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Latest Transactions</h2>
+                    <div class="flex space-x-2">
+                        <!-- <button class="bg-gray-800/50 hover:bg-gray-800 px-4 py-2 rounded-lg transition">
+                            <i class="fa-solid fa-filter mr-2"></i>Filter
+                        </button> -->
+
+                        <label class="flex items-center space-x-2 bg-gray-800/50 hover:bg-gray-800 px-4 py-2 rounded-lg transition">
+                            <button id="toggle-zero-gas"
+                                      onclick="toggleZeroGasFilter(this)"
+                                      class="relative w-10 h-5 bg-blue-500 rounded-full transition duration-200 focus:outline-none">
+                                <span class="absolute left-1 top-1 w-3 h-3 translate-x-5 bg-white rounded-full transition transform duration-200"></span>
+                            </button>
+                            <span>Hide internal transactions</span>
+                        </label>
+
+                        <button onclick="refresh()"
+                            class="bg-gray-800/50 hover:bg-gray-800 px-4 py-2 rounded-lg transition">
+                            <i class="fa-solid fa-clock-rotate-left mr-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+                <div id="tx-list" class="space-y-4">
+                </div>
+            </div>
+        </section>
+        <div id="toast-container" class="fixed bottom-6 right-6 space-y-4 z-50"></div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        getLatestBlock();
+        getLastConfirmationSpeed()
+        getLatestTransactions();
+    </script>
+
+</body>
+
+</html>

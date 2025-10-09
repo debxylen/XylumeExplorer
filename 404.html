@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xylume Explorer</title>
+</head>
+
+<body>
+  <script>
+    const path = window.location.pathname;
+    const txMatch = path.match(new RegExp(`^/XylumeExplorer/tx/([^/]+)$`));
+    if (txMatch) {
+      const hash = txMatch[1];
+      window.location.href = `/XylumeExplorer/tx.html?hash=${hash}`;
+    }
+    else if (path.match(new RegExp(`^/XylumeExplorer/address/([^/]+)$`))) {
+      const address = path.split('/').pop();
+      window.location.href = `/XylumeExplorer/address.html?address=${address}`;
+    }
+    else {
+      document.body.innerHTML = '<h1>404 - Page Not Found</h1>';
+    }
+
+  </script>
+
+</body>
+
+</html>
