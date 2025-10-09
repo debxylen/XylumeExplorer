@@ -1,17 +1,23 @@
+<!DOCTYPE html>
 <html>
 
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Poppins" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.6.9/dist/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
     <title>Xylume Explorer</title>
-    <link rel="icon" type="image/x-icon" href="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png">
 
     <style>
         * {
-            font-family: "Poppins", sans-serif;
+            font-family: "Poppins Light", sans-serif;
+            scroll-behavior: smooth;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         ::-webkit-scrollbar {
@@ -20,19 +26,21 @@
     </style>
 </head>
 
-<body class="h-full w-full text-base-content">
-    <div class="fixed inset-0 w-screen h-screen bg-gradient-to-b from-gray-900 to-black -z-10"></div>
-    <div id="explorer" class="text-white">
+<body class="h-full w-full overflow-x-hidden">
+    <div class="fixed inset-0 bg-gradient-to-b from-gray-900 to-black -z-10"></div>
+    <div id="explorer" class="text-white max-w-full overflow-x-hidden">
         <header id="header"
             class="fixed w-full z-50 bg-opacity-90 bg-gray-900 backdrop-blur-sm border-b border-gray-800/50">
             <div class="container mx-auto px-6 py-4">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-diagram-project text-blue-500 text-2xl"></i>
-                        <span class="text-xl font-bold">Xylume Explorer</span>
-                    </div>
+                    <a href="./">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-diagram-project text-blue-500 text-2xl"></i>
+                            <span class="hidden md:block text-xl font-bold">Xylume Explorer</span>
+                        </div>
+                    </a>
                     <div class="flex items-center space-x-4 flex-1 justify-end">
-                        <div class="relative w-[40%]">
+                        <div class="relative flex-1 max-w-xl pl-12">
                             <input id="search" onkeydown="handleSearch(event)" type="text"
                                 placeholder="Search by TX Hash, TX ID or Address"
                                 class="bg-gray-800/50 border border-gray-700 rounded-xl px-6 py-2 focus:outline-none focus:border-blue-500 transition w-full">
@@ -40,7 +48,7 @@
                                 onclick="search(document.getElementById('search').value)"></i>
                         </div>
                         <button onclick="clickWallet(this)"
-                            class="bg-blue-600/20 hover:bg-blue-600/30 px-4 py-2 rounded-lg transition">
+                            class="hidden md:block bg-blue-600/20 hover:bg-blue-600/30 px-4 py-2 rounded-lg transition">
                             <i class="fa-solid fa-wallet mr-2"></i>Connect
                         </button>
                     </div>
@@ -73,18 +81,15 @@
         </section>
         <section id="transactions" class="py-8">
             <div class="container mx-auto px-6">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex space-y-4 md:space-y-0 justify-between items-center mb-6 flex-col md:flex-row">
                     <h2 class="text-2xl font-bold">Latest Transactions</h2>
-                    <div class="flex space-x-2">
-                        <!-- <button class="bg-gray-800/50 hover:bg-gray-800 px-4 py-2 rounded-lg transition">
-                            <i class="fa-solid fa-filter mr-2"></i>Filter
-                        </button> -->
-
-                        <label class="flex items-center space-x-2 bg-gray-800/50 hover:bg-gray-800 px-4 py-2 rounded-lg transition">
-                            <button id="toggle-zero-gas"
-                                      onclick="toggleZeroGasFilter(this)"
-                                      class="relative w-10 h-5 bg-blue-500 rounded-full transition duration-200 focus:outline-none">
-                                <span class="absolute left-1 top-1 w-3 h-3 translate-x-5 bg-white rounded-full transition transform duration-200"></span>
+                    <div class="flex space-x-0 md:space-x-2 space-y-2 md:space-y-0 flex-col md:flex-row">
+                        <label
+                            class="flex items-center space-x-2 bg-gray-800/50 hover:bg-gray-800 px-4 py-2 rounded-lg transition">
+                            <button id="toggle-zero-gas" onclick="toggleZeroGasFilter(this)"
+                                class="relative w-10 h-5 bg-blue-500 rounded-full transition duration-200 focus:outline-none">
+                                <span
+                                    class="absolute left-1 top-1 w-3 h-3 translate-x-5 bg-white rounded-full transition transform duration-200"></span>
                             </button>
                             <span>Hide internal transactions</span>
                         </label>

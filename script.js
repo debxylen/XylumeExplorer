@@ -212,7 +212,12 @@ function toggleZeroGasFilter(button) {
   button.classList.toggle("bg-gray-600", !hideZeroGas);
 
   document.getElementById("tx-list").innerHTML = "";
-  getLatestTransactions();
+  if (document.getElementById("address-info")) {
+    const address = document.getElementById('stat-address').querySelector('div.text-blue-500').innerText;
+    getLatestTransactions(address, address);
+  } else {
+    getLatestTransactions();
+  }
 }
 
 async function getLatestTransactions(senderAddr = null, receipientAddr = null) { 
@@ -270,16 +275,16 @@ async function addTxToList(tx, i) {
         <div class="grid md:grid-cols-2 gap-4">
             <div>
                 <div class="text-sm text-gray-400">From</div>
-                <div class="text-blue-500 truncate">${tx.from}</div>
+                <div class="text-blue-500 overflow-hidden whitespace-nowrap text-ellipsis max-w-[75%]">${tx.from}</div>
             </div>
             <div>
                 <div class="text-sm text-gray-400">To</div>
-                <div class="text-blue-500 truncate">${tx.to}</div>
+                <div class="text-blue-500 overflow-hidden whitespace-nowrap text-ellipsis max-w-[75%]">${tx.to}</div>
             </div>
         </div>
-        <div class="mt-4 flex justify-between items-center">
+        <div class="mt-4 flex justify-between items-center flex-col md:flex-row">
             <div class="text-xl font-bold">${web3.utils.fromWei(tx.value, 'ether')} XYL</div>
-            <div class="text-gray-400 text-sm truncate">Hash: ${tx.hash}</div>
+            <div class="text-gray-400 text-sm overflow-hidden whitespace-nowrap text-ellipsis max-w-[75%]">Hash: ${tx.hash}</div>
         </div>
         </a>
     `;
@@ -585,7 +590,7 @@ async function getTokenInfo(tokenAddress) {
   try {
     const name = await tokenContract.methods.name().call();
     const symbol = await tokenContract.methods.symbol().call();
-    const decimals = 18; // always 18, but else, await tokenContract.methods.decimals().call();
+    const decimals = 18;
     return { name, symbol, decimals };
   } catch {
     return null;
